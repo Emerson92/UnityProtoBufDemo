@@ -1,3 +1,3 @@
 # UnityProtoBufDemo
-这是Protobuf的通讯Demo，工程中包含客户端与服务端，可以使用Protobuf相互进行通讯
+这是Protobuf的通讯Demo，工程中包含客户端与服务端，可以使用Protobuf相互进行通讯（这里并没有考虑解决粘包与组包的情况）
 测试Unity版本为5.61f1
