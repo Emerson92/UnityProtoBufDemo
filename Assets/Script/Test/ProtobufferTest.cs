@@ -12,6 +12,7 @@ using UnityEngine.UI;
 using ProtoBuf;
 using System.IO;
 using System.Text;
+using System.Runtime.Serialization.Formatters.Binary;
 
 public class ProtobufferTest : MonoBehaviour {
 
@@ -59,7 +60,15 @@ public class ProtobufferTest : MonoBehaviour {
             if (IsOpenNewMethod)
             {
                 UserData user = PackCodec.Deserialize<UserData>(data);
-                msg = string.Format("user2-> id:{0}, name:{1}, level:{2}", user.id, user.name, user.level);
+                BinaryFormatter bFormatter = new BinaryFormatter();
+                using (MemoryStream s = new MemoryStream())
+                {
+                    byte[] bdata = user.data;
+                    s.Write(bdata, 0, bdata.Length);
+                    s.Position = 0;
+                    Test t = (Test)bFormatter.Deserialize(s);
+                    msg = string.Format("user2-> id:{0}, name:{1}, level:{2}, data:{3}", user.id, user.name, user.level, t.msg);
+                }
             }
             else {
                 CSLoginInfo mLoginInfo = PackCodec.Deserialize<CSLoginInfo>(data);
@@ -78,30 +87,47 @@ public class ProtobufferTest : MonoBehaviour {
             if (IsOpenNewMethod)
             {
                 UserData user = PackCodec.Deserialize<UserData>(data);
-                msg = string.Format("user2-> id:{0}, name:{1}, level:{2}", user.id, user.name, user.level);
+                BinaryFormatter bFormatter = new BinaryFormatter();
+                using (MemoryStream s = new MemoryStream())
+                {
+                    byte[] bdata = user.data;
+                    s.Write(bdata, 0, bdata.Length);
+                    s.Position = 0;
+                    Test t = (Test)bFormatter.Deserialize(s);
+                    msg = string.Format("user2-> id:{0}, name:{1}, level:{2}, data:{3}", user.id, user.name, user.level, t.msg);
+                }
             }
             else {
                 CSLoginInfo mLoginInfo = PackCodec.Deserialize<CSLoginInfo>(data);
                 msg = "UserName = " + mLoginInfo.UserName + ", Password = " + mLoginInfo.Password;
             }
 
-            txtMsg.text += msg;
+            txtMsg.text = msg;
         });
         byte[] buff = null;
         if (IsOpenNewMethod)
         {
+            Test test = new Test();
+            test.msg = "I get message";
             UserData user1 = new UserData();
             user1.id = 1;
             user1.name = "User1";
             user1.level = 10;
+            BinaryFormatter bFormatter = new BinaryFormatter();
+            using (MemoryStream byteData = new MemoryStream())
+            {
+                bFormatter.Serialize(byteData, test);
+                byte[] value = byteData.GetBuffer();
+                user1.data = value;
+            }
+            //user1.data = Encoding.UTF8.GetBytes("I get your message");
             //序列化 
             using (MemoryStream ms = new MemoryStream())
             {
                 Serializer.Serialize<UserData>(ms, user1);
                 ms.Position = 0;
                 int length = (int)ms.Length;
-                buff = new byte[length];
-                ms.Read(buff, 0, length);
+                buff = ms.ToArray();
             }
         }
         else {
@@ -136,10 +162,22 @@ public class ProtobufferTest : MonoBehaviour {
             byte[] buff = null;
             if (IsOpenNewMethod)
             {
+                Test test = new Test();
+                test.msg = "It's a Server bytes array";
+
                 UserData user1 = new UserData();
                 user1.id = 1;
                 user1.name = "User1";
                 user1.level = 10;
+                BinaryFormatter bFormatter = new BinaryFormatter();
+                using (MemoryStream byteData = new MemoryStream())
+                {
+                    bFormatter.Serialize(byteData, test);
+                    byte[] value = byteData.GetBuffer();
+                    user1.data = value;
+                }
+                //user1.data = Encoding.UTF8.GetBytes("It's a Server bytes array");
+               
                 //序列化 
                 using (MemoryStream ms = new MemoryStream())
                 {
@@ -166,18 +204,30 @@ public class ProtobufferTest : MonoBehaviour {
             byte[] buff = null;
             if (IsOpenNewMethod)
             {
+                Test test = new Test();
+                //test.msg = "It's a Client bytes array";
+                test.msg = "It's a Client bytes array";
                 UserData user1 = new UserData();
                 user1.id = 1;
                 user1.name = "User1";
                 user1.level = 10;
+                //user1.data = Encoding.UTF8.GetBytes("It's a Client bytes array");
+                byte[] stringData = Encoding.UTF8.GetBytes("It's a Client bytes array");
+                Debug.Log("byte string length:" + stringData.Length);
+                BinaryFormatter bFormatter = new BinaryFormatter();
+                using (MemoryStream byteData = new MemoryStream())
+                {
+                    Serializer.Serialize<Test>(byteData,test);
+                    user1.data = byteData.ToArray();
+                    Debug.Log("data length:" + user1.data.Length);
+                }
                 //序列化 
                 using (MemoryStream ms = new MemoryStream())
                 {
                     Serializer.Serialize<UserData>(ms, user1);
                     ms.Position = 0;
                     int length = (int)ms.Length;
-                    buff = new byte[length];
-                    ms.Read(buff, 0, length);
+                    buff = ms.ToArray();
                 }
             }
             else
@@ -265,4 +315,14 @@ public class UserData {
     [ProtoMember(3)]
     public int level;
 
+    [ProtoMember(4)]
+    public byte[] data;
+}
+
+[ProtoContract]
+[Serializable]
+public class Test {
+
+    [ProtoMember(1)]
+    public string msg;
 }
